@@ -6,7 +6,6 @@ from datetime import datetime
 from fpdf import FPDF
 from num2words import num2words
 
-# Setup logging for Render debugging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
@@ -15,7 +14,11 @@ app = Flask(__name__)
 def init_db():
     try:
         db_path = os.path.join(os.getcwd(), "sanctions.db")
+        logger.debug(f"Current working directory: {os.getcwd()}")
         logger.debug(f"Attempting to initialize database at {db_path}")
+        if not os.access(os.getcwd(), os.W_OK):
+            logger.error(f"No write permission in {os.getcwd()}")
+            raise PermissionError(f"No write permission in {os.getcwd()}")
         conn = sqlite3.connect(db_path)
         c = conn.cursor()
         logger.debug("Connected to SQLite")
@@ -36,18 +39,19 @@ def init_db():
         logger.info("Database initialized successfully")
     except Exception as e:
         logger.error(f"Failed to initialize database: {str(e)}")
-        raise  # Ensure startup fails visibly in logs
+        raise
 
 def seed_teachers():
     try:
+        db_path = os.path.join(os.getcwd(), "sanctions.db")
         teachers_data = [
             ("2013034577", "VANDNA", "LECTURER POLITICAL SCIENCE", "59282970"),
             ("2013034578", "RAJESH KUMAR", "LECTURER MATHEMATICS", "59282971"),
             ("2013034579", "ANITA SHARMA", "LECTURER ENGLISH", "59282972"),
-            # Add all 39 teachers here—replace with your full list if different...
+            # Add your 39 teachers...
             ("21011177022", "HITESH KUMARI", "TGT SOCIAL SCIENCE", "22123096"),
         ]
-        conn = sqlite3.connect(os.path.join(os.getcwd(), "sanctions.db"))
+        conn = sqlite3.connect(db_path)
         c = conn.cursor()
         logger.debug("Seeding teachers into database")
         for teacher in teachers_data:
@@ -59,7 +63,9 @@ def seed_teachers():
         logger.error(f"Failed to seed teachers: {str(e)}")
         raise
 
-init_db()  # Runs on startup when app.py is imported by Gunicorn
+logger.info("Starting app initialization")
+init_db()
+logger.info("App initialization complete")
 
 def calculate_payment(designation, days):
     if "LECTURER" in designation.upper():
@@ -150,13 +156,29 @@ def issue_sanction():
 
         conn = sqlite3.connect(os.path.join(os.getcwd(), "sanctions.db"))
         c = conn.cursor()
+        logger.debug("Fetching teachers for /issue")
         c.execute("SELECT app_id, name, designation, nic_pin FROM teachers")
         teachers = c.fetchall()
         conn.close()
+        logger.debug(f"Fetched {len(teachers)} teachers")
         return render_template('issue_form.html', teachers=teachers)
     except Exception as e:
         logger.error(f"Error in issue_sanction: {str(e)}")
         raise
 
+@app.route('/sanctions')
+def list_sanctions():
+    try:
+        conn = sqlite3.connect(os.path.join(os.getcwd(), "sanctions.db"))
+        c = conn.cursor()
+        c.execute("SELECT id, total_amount, month, issued_date, file_path FROM sanctions")
+        sanctions = c.fetchall()
+        conn.close()
+        logger.debug(f"Fetched {len(sanctions)} sanctions")
+        return render_template('sanctions_list.html', sanctions=sanctions)
+    except Exception as e:
+        logger.error(f"Error in list_sanctions: {str(e)}")
+        raise
+
 if __name__ == '__main__':
-    app.run(debug=True)  # For local testing only
+    app.run(debug=True)
