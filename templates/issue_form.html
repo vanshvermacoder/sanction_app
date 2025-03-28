@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Issue Sanction Order</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .dragging {
+            opacity: 0.5;
+            background-color: #e5e7eb;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white shadow-lg rounded-lg p-6 w-full max-w-4xl">
+        <h1 class="text-2xl font-bold text-gray-800 mb-6 text-center">Issue Sanction Order</h1>
+        
+        <div class="mb-6 text-center">
+            <a href="{{ url_for('list_sanctions') }}"
+               class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                Edit Issued Sanctions
+            </a>
+        </div>
+
+        <form method="POST" action="/issue" class="space-y-6" id="sanctionForm">
+            <div>
+                <label for="month" class="block text-sm font-medium text-gray-700">Month</label>
+                <input type="text" id="month" name="month" placeholder="e.g., March" required 
+                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200" id="teacherTable">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                <input type="checkbox" id="selectAll" 
+                                       class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                                <label for="selectAll" class="ml-2">Select All</label>
+                            </th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">App ID</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Designation</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">NIC PIN</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Days</th>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200" id="sortable">
+                        {% for teacher in teachers %}
+                        <tr draggable="true" data-app-id="{{ teacher.app_id }}">
+                            <td class="px-4 py-2 whitespace-nowrap">
+                                <input type="checkbox" name="selected_teachers" value="{{ teacher.app_id }}"
+                                       class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded teacher-checkbox">
+                            </td>
+                            <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{{ teacher.app_id }}</td>
+                            <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{{ teacher.name }}</td>
+                            <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{{ teacher.designation }}</td>
+                            <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900">{{ teacher.nic_pin }}</td>
+                            <td class="px-4 py-2 whitespace-nowrap">
+                                <input type="number" name="days_{{ teacher.app_id }}" min="0" value="0"
+                                       class="w-16 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-1">
+                            </td>
+                            <td class="px-4 py-2 whitespace-nowrap">
+                                <form method="POST" action="/remove_teacher/{{ teacher.app_id }}" class="inline">
+                                    <button type="submit" onclick="return confirm('Are you sure you want to remove {{ teacher.name }}?');"
+                                            class="text-red-600 hover:text-red-800 text-sm font-medium">Remove</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="text-center">
+                <button type="submit"
+                        class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                    Issue Sanction Order
+                </button>
+            </div>
+        </form>
+
+        <div class="mt-8">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">Add New Teacher</h2>
+            <form method="POST" action="/add_teacher" class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <input type="text" name="app_id" placeholder="Application ID" required
+                       class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                <input type="text" name="name" placeholder="Name" required
+                       class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                <input type="text" name="designation" placeholder="Designation" required
+                       class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                <input type="text" name="nic_pin" placeholder="NIC PIN" required
+                       class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2">
+                <button type="submit"
+                        class="col-span-full sm:col-span-1 sm:col-start-2 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                    Add Teacher
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const tbody = document.getElementById('sortable');
+        let draggedRow = null;
+        tbody.addEventListener('dragstart', (e) => {
+            draggedRow = e.target.closest('tr');
+            draggedRow.classList.add('dragging');
+        });
+        tbody.addEventListener('dragend', () => {
+            draggedRow.classList.remove('dragging');
+            draggedRow = null;
+        });
+        tbody.addEventListener('dragover', (e) => {
+            e.preventDefault();
+        });
+        tbody.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const targetRow = e.target.closest('tr');
+            if (draggedRow && targetRow && draggedRow !== targetRow) {
+                const allRows = Array.from(tbody.querySelectorAll('tr'));
+                const draggedIndex = allRows.indexOf(draggedRow);
+                const targetIndex = allRows.indexOf(targetRow);
+                if (draggedIndex < targetIndex) {
+                    targetRow.after(draggedRow);
+                } else {
+                    targetRow.before(draggedRow);
+                }
+            }
+        });
+        const selectAllCheckbox = document.getElementById('selectAll');
+        const teacherCheckboxes = document.querySelectorAll('.teacher-checkbox');
+        selectAllCheckbox.addEventListener('change', () => {
+            teacherCheckboxes.forEach(checkbox => {
+                checkbox.checked = selectAllCheckbox.checked;
+            });
+        });
+        teacherCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', () => {
+                const allChecked = Array.from(teacherCheckboxes).every(cb => cb.checked);
+                const someChecked = Array.from(teacherCheckboxes).some(cb => cb.checked);
+                selectAllCheckbox.checked = allChecked;
+                selectAllCheckbox.indeterminate = !allChecked && someChecked;
+            });
+        });
+    </script>
+</body>
+</html>
