@@ -6,6 +6,7 @@ from datetime import datetime
 from fpdf import FPDF
 from num2words import num2words
 
+# Setup logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
@@ -45,11 +46,45 @@ def seed_teachers():
     try:
         db_path = os.path.join(os.getcwd(), "sanctions.db")
         teachers_data = [
-            ("2013034577", "VANDNA", "LECTURER POLITICAL SCIENCE", "59282970"),
-            ("2013034578", "RAJESH KUMAR", "LECTURER MATHEMATICS", "59282971"),
-            ("2013034579", "ANITA SHARMA", "LECTURER ENGLISH", "59282972"),
-            # Add your 39 teachers...
-            ("21011177022", "HITESH KUMARI", "TGT SOCIAL SCIENCE", "22123096"),
+        ("2013034577", "VANDNA", "LECTURER POLITICAL SCIENCE", "59282970"),
+        ("2013051618", "RASHMI SHARMA", "LECTURER ENGLISH", "81517653"),
+        ("2013052791", "KIRAN MAURYA", "TGT SOCIAL SCIENCE", "51659484"),
+        ("2013216208", "SMTRAJESRI DEVI", "TGT SANSKRIT", "86837591"),
+        ("2013262057", "ALKA SHARMA", "TGT NATURAL SCIENCE", "53417529"),
+        ("2013529085", "JOOLI", "TGT PET", "63667860"),
+        ("2014009064", "DOLI", "TGT SPECIAL EDUCATION TEACHER", "52147318"),
+        ("2014017594", "SARITA KUMARI", "LECTURER POLITICAL SCIENCE", "50803800"),
+        ("2014020702", "SEEMA KUMARI", "LECTURER HINDI", "26879010"),
+        ("2014023937", "POOJA GOYAL", "TGT SANSKRIT", "99135751"),
+        ("2014042910", "SUNEETA MEENA", "LECTURER SANSKRIT", "65512895"),
+        ("2014054513", "VARSHA SHARMA", "LECTURER POLITICAL SCIENCE", "50270586"),
+        ("2014061685", "KM MAMTA KUMARI", "LECTURER GEOGRAPHY", "14817956"),
+        ("2014072375", "PRABHA", "LECTURER HISTORY", "12378599"),
+        ("2014082977", "POONAM RANI", "TGT HINDI", "41725605"),
+        ("2014132606", "SHALU TOMAR", "LECTURER HISTORY", "14049094"),
+        ("2014133920", "MEENAKSHI VERMA", "LECTURER HINDI", "92739631"),
+        ("2014144738", "KM NEHA GUPTA", "TGT NATURAL SCIENCE", "10907985"),
+        ("2017020486", "LALIT CHOUDHARY", "TGT PET", "56877285"),
+        ("2017048499", "RAJENDRA PRASAD MEENA", "LECTURER GEOGRAPHY", "22057398"),
+        ("2017052969", "RUBY", "TGT ENGLISH", "98783133"),
+        ("2017056803", "MANJU RANI", "TGT SOCIAL SCIENCE", "21500386"),
+        ("2017057835", "SHANVIKA GAUR", "LECTURER MATH", "98894471"),
+        ("2017077447", "DEEPAK KUMAR", "LECTURER PHYSICAL EDUCATION", "86357860"),
+        ("2017078692", "REENA", "TGT ENGLISH", "88259229"),
+        ("2017090786", "DEEPA", "TGT MATH", "76623091"),
+        ("2017092747", "ABHILASHA GUJER", "TGT NATURAL SCIENCE", "22753889"),
+        ("2017112432", "JYOTI", "LECTURER GEOGRAPHY", "90148442"),
+        ("2017124568", "REENA KUMARI", "LECTURER ENGLISH", "32550162"),
+        ("2017126314", "SUMAN RANI", "TGT ENGLISH", "44550504"),
+        ("2017133091", "KM PRAGGYA KUMARI", "LECTURER HISTORY", "73689092"),
+        ("2017138324", "GAURI SHARMA", "TGT MATH", "20675132"),
+        ("2020000081", "PRIYA", "TGT MATH", "66708566"),
+        ("2020032667", "ARCHANA CHAUBEY", "TGT MATH", "28560314"),
+        ("2020037257", "PRIYA MISHRA", "TGT MATH", "56539258"),
+        ("2020038678", "CHANDNI", "TGT SPECIAL EDUCATION TEACHER", "46172837"),
+        ("2020046161", "KAJAL", "TGT MATH", "81378001"),
+        ("21011155319", "PREETI SHARMA", "TGT HINDI", "10959365"),
+        ("21011177022", "HITESH KUMARI", "TGT SOCIAL SCIENCE", "22123096")
         ]
         conn = sqlite3.connect(db_path)
         c = conn.cursor()
@@ -171,11 +206,39 @@ def list_sanctions():
     try:
         conn = sqlite3.connect(os.path.join(os.getcwd(), "sanctions.db"))
         c = conn.cursor()
-        c.execute("SELECT id, total_amount, month, issued_date, file_path FROM sanctions")
-        sanctions = c.fetchall()
+        # Join sanctions with sanction_teachers and teachers to get teacher names
+        c.execute('''
+            SELECT s.id, s.total_amount, s.month, s.issued_date, s.file_path, 
+                   t.name, st.days
+            FROM sanctions s
+            LEFT JOIN sanction_teachers st ON s.id = st.sanction_id
+            LEFT JOIN teachers t ON st.app_id = t.app_id
+            ORDER BY s.id DESC
+        ''')
+        sanctions_data = c.fetchall()
         conn.close()
-        logger.debug(f"Fetched {len(sanctions)} sanctions")
-        return render_template('sanctions_list.html', sanctions=sanctions)
+
+        # Group teachers by sanction ID
+        sanctions = {}
+        for row in sanctions_data:
+            sanction_id = row[0]
+            if sanction_id not in sanctions:
+                sanctions[sanction_id] = {
+                    'id': row[0],
+                    'total_amount': row[1],
+                    'month': row[2],
+                    'issued_date': row[3],
+                    'file_path': row[4],
+                    'teachers': []
+                }
+            if row[5]:  # If teacher name exists
+                sanctions[sanction_id]['teachers'].append({
+                    'name': row[5],
+                    'days': row[6]
+                })
+
+        logger.debug(f"Fetched {len(sanctions)} sanctions with teacher details")
+        return render_template('sanctions_list.html', sanctions=sanctions.values())
     except Exception as e:
         logger.error(f"Error in list_sanctions: {str(e)}")
         raise

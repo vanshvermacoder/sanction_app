@@ -2,6 +2,11 @@
 <html>
 <head>
     <title>Sanctions List</title>
+    <style>
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid black; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+    </style>
 </head>
 <body>
     <h1>Issued Sanctions</h1>
@@ -12,14 +17,26 @@
             <th>Month</th>
             <th>Issued Date</th>
             <th>File Path</th>
+            <th>Teachers</th>
         </tr>
         {% for sanction in sanctions %}
         <tr>
-            <td>{{ sanction[0] }}</td>
-            <td>{{ sanction[1] }}</td>
-            <td>{{ sanction[2] }}</td>
-            <td>{{ sanction[3] }}</td>
-            <td>{{ sanction[4] or 'Not generated yet' }}</td>
+            <td>{{ sanction.id }}</td>
+            <td>{{ sanction.total_amount }}</td>
+            <td>{{ sanction.month }}</td>
+            <td>{{ sanction.issued_date }}</td>
+            <td>{{ sanction.file_path or 'Not generated yet' }}</td>
+            <td>
+                {% if sanction.teachers %}
+                    <ul>
+                    {% for teacher in sanction.teachers %}
+                        <li>{{ teacher.name }} ({{ teacher.days }} days)</li>
+                    {% endfor %}
+                    </ul>
+                {% else %}
+                    No teachers assigned
+                {% endif %}
+            </td>
         </tr>
         {% endfor %}
     </table>
